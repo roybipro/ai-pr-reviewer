@@ -2,12 +2,19 @@
   "name": "ai-pr-reviewer",
   "private": true,
   "packageManager": "pnpm@12.18.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "pnpm -r --parallel --if-present run dev",
     "lint": "pnpm -r --if-present run lint",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
   }
 }
