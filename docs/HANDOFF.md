@@ -17,12 +17,12 @@ Read this first in a new session. Update it after every task.
 ## Current state
 - Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `0d4df95` (PRs #1–#8 merged).
 - In progress: **M2 — GitHub App and Webhook Verification**. Plan approved; new deps approved: `pg`, `bullmq` (brings `ioredis`).
-- M2 tasks 1–2 done (`verifySignature`; `POST /webhooks/github`, branch `feature/webhook-endpoint`). Next: task 3 (needs Docker/Postgres).
+- M2 tasks 1–3 done (`verifySignature`; `POST /webhooks/github`, PR #9 on `feature/webhook-endpoint`; migrations + delivery dedupe, branch `feature/db-migrations` stacked on #9). Next: task 4 (BullMQ; needs Redis).
 
 ## Next tasks (M2)
 1. ✅ `verifySignature` in `apps/api/src/webhooks/verify-signature.ts` (HMAC SHA-256 via `node:crypto`; check header present and length before `timingSafeEqual`). Unit tests: valid, tampered body, missing header, wrong length.
 2. ✅ `GITHUB_WEBHOOK_SECRET` in `env.ts` and `.env.example` (placeholder only); `rawBody: true` in `main.ts`; `POST /webhooks/github` returns 401 on bad signature, 202 on good. Controller tests.
-3. Migration `apps/api/migrations/001_init.sql` plus a small runner using `pg`. Tables: `installations` (id = GitHub installation id, account_login, repository_selection, active, created_at, updated_at) and `webhook_deliveries` (delivery_id PK, event, received_at). Insert with `ON CONFLICT DO NOTHING`; a duplicate delivery returns 202 without enqueueing.
+3. ✅ Migration `apps/api/migrations/001_init.sql` plus a small runner using `pg`. Tables: `installations` (id = GitHub installation id, account_login, repository_selection, active, created_at, updated_at) and `webhook_deliveries` (delivery_id PK, event, received_at). Insert with `ON CONFLICT DO NOTHING`; a duplicate delivery returns 202 without enqueueing.
 4. BullMQ enqueue with jobId = delivery id. Test: endpoint responds in under 1s with the job queued.
 5. `installation` events (FR-3): `created` upserts active; `deleted`/`suspend` set active=false. Tested with fixture payloads (parsed with zod).
 6. Log redaction: log only event name and delivery id. Test captures logger output and asserts the secret is absent.
@@ -32,6 +32,8 @@ Deferred: `@octokit/app` until M3; `@octokit/webhooks` not used (zod parses payl
 
 ## Gotchas
 - Docker Desktop may be stopped: `open -a Docker`, then `docker compose -f infra/docker-compose.yml up -d --wait`. Local DB creds: `reviewer`/`reviewer`/`reviewer` on 5432.
+- A Homebrew postgres may shadow Docker on `localhost:5432`. Reach Docker via the LAN IP: `DATABASE_URL=postgres://reviewer:reviewer@$(ipconfig getifaddr en0):5432/reviewer`. Migrate with `pnpm --filter api build && pnpm --filter api migrate`. DB specs skip when Postgres is unreachable (CI).
+- No top-level `await` in specs (commonjs → TS1378); use `ctx.skip()` inside the test.
 - `ls` is aliased to colorls; use `/bin/ls` or `find`.
 - Vitest/esbuild emits no decorator metadata: instantiate Nest controllers directly in tests.
 - `pnpm peers check` warns eslint 10 is above the peer range of eslint-plugin-react/import/jsx-a11y (via eslint-config-next). Lint runs fine; revisit if a rule crashes.
