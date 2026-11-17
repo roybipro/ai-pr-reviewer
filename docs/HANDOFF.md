@@ -15,11 +15,12 @@ Read this first in a new session. Update it after every task.
 - Tests never call the paid LLM API or post to GitHub.
 
 ## Current state
-- Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `ded5d8f` (PRs #1–#6 merged).
-- Next milestone: **2 — GitHub App and Webhook Verification**. Plan approved; new deps approved: `pg`, `bullmq` (brings `ioredis`).
+- Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `7eacbf9` (PRs #1–#7 merged).
+- In progress: **M2 — GitHub App and Webhook Verification**. Plan approved; new deps approved: `pg`, `bullmq` (brings `ioredis`).
+- M2 task 1 done (`verifySignature`, branch `feature/verify-signature`). Next: task 2.
 
 ## Next tasks (M2)
-1. `verifySignature` in `apps/api/src/webhooks/verify-signature.ts` (HMAC SHA-256 via `node:crypto`; check header present and length before `timingSafeEqual`). Unit tests: valid, tampered body, missing header, wrong length.
+1. ✅ `verifySignature` in `apps/api/src/webhooks/verify-signature.ts` (HMAC SHA-256 via `node:crypto`; check header present and length before `timingSafeEqual`). Unit tests: valid, tampered body, missing header, wrong length.
 2. `GITHUB_WEBHOOK_SECRET` in `env.ts` and `.env.example` (placeholder only); `rawBody: true` in `main.ts`; `POST /webhooks/github` returns 401 on bad signature, 202 on good. Controller tests.
 3. Migration `apps/api/migrations/001_init.sql` plus a small runner using `pg`. Tables: `installations` (id = GitHub installation id, account_login, repository_selection, active, created_at, updated_at) and `webhook_deliveries` (delivery_id PK, event, received_at). Insert with `ON CONFLICT DO NOTHING`; a duplicate delivery returns 202 without enqueueing.
 4. BullMQ enqueue with jobId = delivery id. Test: endpoint responds in under 1s with the job queued.
