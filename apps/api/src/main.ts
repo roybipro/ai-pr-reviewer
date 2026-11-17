@@ -11,7 +11,7 @@ async function bootstrap() {
     console.error((err as Error).message);
     process.exit(1);
   }
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   await app.listen(env.PORT);
 }
 void bootstrap();

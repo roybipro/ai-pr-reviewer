@@ -1,3 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# msgpackr-extract (via bullmq) is an optional native speedup; msgpackr falls back to pure JS.
+allowBuilds:
+  msgpackr-extract: false

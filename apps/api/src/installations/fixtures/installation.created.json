@@ -1,0 +1,13 @@
+{
+  "action": "created",
+  "installation": {
+    "id": 424242,
+    "account": { "login": "octo-org", "id": 1, "type": "Organization" },
+    "repository_selection": "selected",
+    "app_id": 1,
+    "target_type": "Organization",
+    "permissions": { "pull_requests": "write", "contents": "read" },
+    "events": ["pull_request"]
+  },
+  "sender": { "login": "octocat", "id": 2 }
+}
