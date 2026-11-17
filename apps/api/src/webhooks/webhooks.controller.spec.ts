@@ -11,27 +11,31 @@ const sign = (b: Buffer) => `sha256=${createHmac('sha256', secret).update(b).dig
 
 function setup(rowCount = 1) {
   const query = vi.fn().mockResolvedValue({ rowCount });
-  return { query, controller: new WebhooksController(secret, { query } as never) };
+  const add = vi.fn().mockResolvedValue({});
+  return { query, add, controller: new WebhooksController(secret, { query } as never, { add } as never) };
 }
 
 describe('WebhooksController', () => {
-  it('accepts a valid signature with 202 and records the delivery', async () => {
-    const { query, controller } = setup();
+  it('accepts a valid signature with 202, records and enqueues the delivery', async () => {
+    const { query, add, controller } = setup();
     await expect(controller.receive({ rawBody: body }, sign(body), 'd-1', 'ping')).resolves.toBeUndefined();
     expect(query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT DO NOTHING'), ['d-1', 'ping']);
+    expect(add).toHaveBeenCalledWith('ping', { deliveryId: 'd-1', event: 'ping', payload: body.toString() }, { jobId: 'd-1' });
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, WebhooksController.prototype.receive)).toBe(202);
   });
 
-  it('still returns 202 for a duplicate delivery', async () => {
-    const { controller } = setup(0);
+  it('still returns 202 for a duplicate delivery but does not enqueue it', async () => {
+    const { add, controller } = setup(0);
     await expect(controller.receive({ rawBody: body }, sign(body), 'd-1', 'ping')).resolves.toBeUndefined();
+    expect(add).not.toHaveBeenCalled();
   });
 
-  it('rejects a tampered body without touching the db', async () => {
-    const { query, controller } = setup();
+  it('rejects a tampered body without touching the db or queue', async () => {
+    const { query, add, controller } = setup();
     const tampered = Buffer.from('{"action":"closed"}');
     await expect(controller.receive({ rawBody: tampered }, sign(body), 'd-1', 'ping')).rejects.toThrow(UnauthorizedException);
     expect(query).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
   });
 
   it('rejects a missing signature header', async () => {
