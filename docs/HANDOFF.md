@@ -15,11 +15,19 @@ Read this first in a new session. Update it after every task.
 - Tests never call the paid LLM API or post to GitHub.
 
 ## Current state
-- Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `e6cc773` (PRs #1–#5 merged).
-- Next milestone: **2 — GitHub App and Webhook Verification**.
+- Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `ded5d8f` (PRs #1–#6 merged).
+- Next milestone: **2 — GitHub App and Webhook Verification**. Plan approved; new deps approved: `pg`, `bullmq` (brings `ioredis`).
 
 ## Next tasks (M2)
-1. Read the M2 section of `docs/MILESTONES.md` and plan its tasks.
+1. `verifySignature` in `apps/api/src/webhooks/verify-signature.ts` (HMAC SHA-256 via `node:crypto`; check header present and length before `timingSafeEqual`). Unit tests: valid, tampered body, missing header, wrong length.
+2. `GITHUB_WEBHOOK_SECRET` in `env.ts` and `.env.example` (placeholder only); `rawBody: true` in `main.ts`; `POST /webhooks/github` returns 401 on bad signature, 202 on good. Controller tests.
+3. Migration `apps/api/migrations/001_init.sql` plus a small runner using `pg`. Tables: `installations` (id = GitHub installation id, account_login, repository_selection, active, created_at, updated_at) and `webhook_deliveries` (delivery_id PK, event, received_at). Insert with `ON CONFLICT DO NOTHING`; a duplicate delivery returns 202 without enqueueing.
+4. BullMQ enqueue with jobId = delivery id. Test: endpoint responds in under 1s with the job queued.
+5. `installation` events (FR-3): `created` upserts active; `deleted`/`suspend` set active=false. Tested with fixture payloads (parsed with zod).
+6. Log redaction: log only event name and delivery id. Test captures logger output and asserts the secret is absent.
+7. **Manual (user):** register the GitHub App (contents + metadata read, pull requests read/write; events `pull_request`, `installation`). Forward with `npx smee-client --url <channel> --target http://localhost:3001/webhooks/github`. Secret goes in `.env` only.
+
+Deferred: `@octokit/app` until M3; `@octokit/webhooks` not used (zod parses payloads); smee via npx, not a dependency.
 
 ## Gotchas
 - Docker Desktop may be stopped: `open -a Docker`, then `docker compose -f infra/docker-compose.yml up -d --wait`. Local DB creds: `reviewer`/`reviewer`/`reviewer` on 5432.
