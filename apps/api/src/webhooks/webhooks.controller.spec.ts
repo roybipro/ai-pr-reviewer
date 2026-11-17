@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { HTTP_CODE_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
+import created from '../installations/fixtures/installation.created.json';
 import { WebhooksController } from './webhooks.controller';
 
 const secret = 'test-secret';
@@ -46,6 +47,22 @@ describe('WebhooksController', () => {
   it('rejects a missing raw body', async () => {
     const { controller } = setup();
     await expect(controller.receive({}, sign(body), 'd-1', 'ping')).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('applies installation events before recording the delivery', async () => {
+    const { query, add, controller } = setup();
+    const payload = Buffer.from(JSON.stringify(created));
+    await controller.receive({ rawBody: payload }, sign(payload), 'd-2', 'installation');
+    expect(query.mock.calls[0][0]).toContain('INSERT INTO installations');
+    expect(query.mock.calls[1][0]).toContain('webhook_deliveries');
+    expect(add).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a malformed installation payload with 400 and records nothing', async () => {
+    const { query, controller } = setup();
+    const payload = Buffer.from('{"action":"created"}');
+    await expect(controller.receive({ rawBody: payload }, sign(payload), 'd-3', 'installation')).rejects.toThrow(BadRequestException);
+    expect(query).not.toHaveBeenCalled();
   });
 
   it('rejects missing delivery headers with 400', async () => {

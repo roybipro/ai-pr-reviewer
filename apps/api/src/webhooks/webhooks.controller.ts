@@ -1,7 +1,9 @@
 import { BadRequestException, Controller, Headers, HttpCode, Inject, Post, Req, UnauthorizedException } from '@nestjs/common';
 import type { Queue } from 'bullmq';
 import type { Pool } from 'pg';
+import { ZodError } from 'zod';
 import { PG_POOL, recordDelivery } from '../db/deliveries';
+import { applyInstallationEvent } from '../installations/installations';
 import { WEBHOOK_QUEUE, type WebhookJob } from '../queue/webhook-queue';
 import { verifySignature } from './verify-signature';
 
@@ -27,6 +29,15 @@ export class WebhooksController {
       throw new UnauthorizedException();
     }
     if (!deliveryId || !event) throw new BadRequestException('missing delivery headers');
+    // Applied before recording so a failure leaves the delivery redeliverable; it is idempotent.
+    if (event === 'installation') {
+      try {
+        await applyInstallationEvent(this.pool, JSON.parse(req.rawBody.toString('utf8')));
+      } catch (err) {
+        if (err instanceof SyntaxError || err instanceof ZodError) throw new BadRequestException('invalid installation payload');
+        throw err;
+      }
+    }
     // Duplicate deliveries are still 202 but are not enqueued again.
     if (!(await recordDelivery(this.pool, deliveryId, event))) return;
     await this.queue.add(event, { deliveryId, event, payload: req.rawBody.toString('utf8') }, { jobId: deliveryId });
