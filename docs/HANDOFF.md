@@ -17,15 +17,16 @@ Read this first in a new session. Update it after every task.
 ## Current state
 - Milestone: **1 — Repository and Infrastructure**
 - `main`: `5ff75b1` (PRs #1 scaffold, #2 docker compose, #3 env validation merged)
-- `feature/ci-workflow` (off main): `.github/workflows/ci.yml` runs install, lint, typecheck, test, build on Node 22 for pushes to main and PRs. Same steps pass locally. Not pushed, PR not opened.
+- `feature/ci-workflow` (off main): `.github/workflows/ci.yml` runs install, lint, typecheck, test, build on Node 22. PR #4 open, not merged.
+- `feature/eslint` (stacked on `feature/ci-workflow`): root flat `eslint.config.mjs` (typescript-eslint recommended everywhere, `eslint-config-next` core-web-vitals + typescript for `apps/web`). Root `pnpm lint` = `eslint . --max-warnings 0`. User approved eslint, typescript-eslint, eslint-config-next. Lint, typecheck, test, build pass. Not pushed.
 
 ## Next tasks (M1)
-1. Push `feature/ci-workflow` and open PR (needs user OK: posts to GitHub).
-2. Lint: needs user approval for ESLint (not in approved stack). Until then `pnpm lint` is a no-op.
-3. Verify all DoD items, `pnpm build`, PROGRESS.md line, milestone report.
+1. Merge PR #4, then push `feature/eslint` and open PR (needs user OK).
+2. Verify all DoD items, `pnpm build`, PROGRESS.md line, milestone report.
 
 ## Gotchas
 - Docker Desktop may be stopped: `open -a Docker`, then `docker compose -f infra/docker-compose.yml up -d --wait`. Local DB creds: `reviewer`/`reviewer`/`reviewer` on 5432.
 - `ls` is aliased to colorls; use `/bin/ls` or `find`.
 - Vitest/esbuild emits no decorator metadata: instantiate Nest controllers directly in tests.
+- `pnpm peers check` warns eslint 10 is above the peer range of eslint-plugin-react/import/jsx-a11y (via eslint-config-next). Lint runs fine; revisit if a rule crashes.
 - "No projects matched" from `pnpm -r --if-present` is fine (exit 0).
