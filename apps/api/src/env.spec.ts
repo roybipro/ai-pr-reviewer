@@ -4,6 +4,7 @@ import { parseEnv } from './env';
 const valid = {
   DATABASE_URL: 'postgres://u:p@localhost:5432/db',
   REDIS_URL: 'redis://localhost:6379',
+  GITHUB_WEBHOOK_SECRET: 'test-only',
 };
 
 describe('parseEnv', () => {
