@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Headers, HttpCode, Inject, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Controller, Headers, HttpCode, Inject, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
 import type { Queue } from 'bullmq';
 import type { Pool } from 'pg';
 import { ZodError } from 'zod';
@@ -11,6 +11,8 @@ export const WEBHOOK_SECRET = 'GITHUB_WEBHOOK_SECRET';
 
 @Controller('webhooks')
 export class WebhooksController {
+  private readonly logger = new Logger(WebhooksController.name);
+
   constructor(
     @Inject(WEBHOOK_SECRET) private readonly secret: string,
     @Inject(PG_POOL) private readonly pool: Pick<Pool, 'query'>,
@@ -29,6 +31,8 @@ export class WebhooksController {
       throw new UnauthorizedException();
     }
     if (!deliveryId || !event) throw new BadRequestException('missing delivery headers');
+    // Only these two fields: never the signature, body or secret.
+    this.logger.log(`received ${event} delivery ${deliveryId}`);
     // Applied before recording so a failure leaves the delivery redeliverable; it is idempotent.
     if (event === 'installation') {
       try {

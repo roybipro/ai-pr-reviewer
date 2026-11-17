@@ -17,7 +17,7 @@ Read this first in a new session. Update it after every task.
 ## Current state
 - Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `0d4df95` (PRs #1–#8 merged).
 - In progress: **M2 — GitHub App and Webhook Verification**. Plan approved; new deps approved: `pg`, `bullmq` (brings `ioredis`).
-- M2 tasks 1–5 done (`verifySignature`; `POST /webhooks/github`, PR #9 on `feature/webhook-endpoint`; migrations + delivery dedupe, PR #10 on `feature/db-migrations` stacked on #9; BullMQ enqueue, PR #11 on `feature/webhook-queue` stacked on #10; `installation` events, branch `feature/installation-events` stacked on #11). Next: task 6.
+- M2 tasks 1–6 done (`verifySignature`; `POST /webhooks/github`, PR #9 on `feature/webhook-endpoint`; migrations + delivery dedupe, PR #10 on `feature/db-migrations` stacked on #9; BullMQ enqueue, PR #11 on `feature/webhook-queue` stacked on #10; `installation` events, PR #12 on `feature/installation-events` stacked on #11; log redaction, branch `feature/log-redaction` stacked on #12). Next: task 7 (manual).
 
 ## Next tasks (M2)
 1. ✅ `verifySignature` in `apps/api/src/webhooks/verify-signature.ts` (HMAC SHA-256 via `node:crypto`; check header present and length before `timingSafeEqual`). Unit tests: valid, tampered body, missing header, wrong length.
@@ -25,7 +25,7 @@ Read this first in a new session. Update it after every task.
 3. ✅ Migration `apps/api/migrations/001_init.sql` plus a small runner using `pg`. Tables: `installations` (id = GitHub installation id, account_login, repository_selection, active, created_at, updated_at) and `webhook_deliveries` (delivery_id PK, event, received_at). Insert with `ON CONFLICT DO NOTHING`; a duplicate delivery returns 202 without enqueueing.
 4. ✅ BullMQ enqueue with jobId = delivery id. Test: endpoint responds in under 1s with the job queued.
 5. ✅ `installation` events (FR-3): `created` upserts active; `deleted`/`suspend` set active=false. Tested with fixture payloads (parsed with zod).
-6. Log redaction: log only event name and delivery id. Test captures logger output and asserts the secret is absent.
+6. ✅ Log redaction: log only event name and delivery id. Test captures logger output and asserts the secret is absent.
 7. **Manual (user):** register the GitHub App (contents + metadata read, pull requests read/write; events `pull_request`, `installation`). Forward with `npx smee-client --url <channel> --target http://localhost:3001/webhooks/github`. Secret goes in `.env` only.
 
 Deferred: `@octokit/app` until M3; `@octokit/webhooks` not used (zod parses payloads); smee via npx, not a dependency.

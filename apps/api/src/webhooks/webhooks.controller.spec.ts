@@ -69,4 +69,26 @@ describe('WebhooksController', () => {
     const { controller } = setup();
     await expect(controller.receive({ rawBody: body }, sign(body), undefined, 'ping')).rejects.toThrow(BadRequestException);
   });
+
+  it('logs only the event name and delivery id, never the secret, signature or body', async () => {
+    const out: string[] = [];
+    const capture = (chunk: unknown) => (out.push(String(chunk)), true);
+    const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(capture);
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(capture);
+    try {
+      const { controller } = setup();
+      const payload = Buffer.from(JSON.stringify({ action: 'opened', leaked: secret }));
+      const signature = sign(payload);
+      await controller.receive({ rawBody: payload }, signature, 'd-9', 'pull_request');
+      const logged = out.join('');
+      expect(logged).toContain('pull_request');
+      expect(logged).toContain('d-9');
+      expect(logged).not.toContain(secret);
+      expect(logged).not.toContain(signature.slice(7));
+      expect(logged).not.toContain('opened');
+    } finally {
+      stdout.mockRestore();
+      stderr.mockRestore();
+    }
+  });
 });
