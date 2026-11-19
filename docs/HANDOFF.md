@@ -15,9 +15,9 @@ Read this first in a new session. Update it after every task.
 - Tests never call the paid LLM API or post to GitHub.
 
 ## Current state
-- Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `0d4df95` (PRs #1–#8 merged).
+- Milestone 1 **done** (see `docs/PROGRESS.md`). `main`: `6c7375b` (PRs #1–#13 merged).
 - In progress: **M2 — GitHub App and Webhook Verification**. Plan approved; new deps approved: `pg`, `bullmq` (brings `ioredis`).
-- M2 tasks 1–6 done (`verifySignature`; `POST /webhooks/github`, PR #9 on `feature/webhook-endpoint`; migrations + delivery dedupe, PR #10 on `feature/db-migrations` stacked on #9; BullMQ enqueue, PR #11 on `feature/webhook-queue` stacked on #10; `installation` events, PR #12 on `feature/installation-events` stacked on #11; log redaction, PR #13 on `feature/log-redaction` stacked on #12). CI fix for #11–#13 (msgpackr-extract build script) is on #13, so merge the stack through #13. Next: task 7 (manual), then verify the remaining DoD item (a real GitHub test delivery is accepted and recorded) and close M2.
+- M2 tasks 1–6 done and merged (PRs #9–#13). Next: task 7 (manual, user): register the GitHub App and start smee forwarding. Then verify the remaining DoD item (a real GitHub test delivery is accepted and recorded), add the M2 row to `docs/PROGRESS.md`, run `pnpm build`, and close M2.
 
 ## Next tasks (M2)
 1. ✅ `verifySignature` in `apps/api/src/webhooks/verify-signature.ts` (HMAC SHA-256 via `node:crypto`; check header present and length before `timingSafeEqual`). Unit tests: valid, tampered body, missing header, wrong length.
